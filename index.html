@@ -533,7 +533,7 @@
     <div id="textControls">
       <div class="field">
         <div class="field-label">텍스트</div>
-        <textarea id="text" placeholder="이모지에 넣을 텍스트&#10;줄바꿈 지원">승인</textarea>
+        <textarea id="text" placeholder="이모지에 넣을 텍스트&#10;줄바꿈 지원">감사</textarea>
       </div>
 
       <div class="field">
@@ -667,7 +667,7 @@ const CHROMA_HEX = '#FF00FF';  // 동일 색상 (문자열)
 
 const S = {
   mode:   'text',
-  text:   '승인',
+  text:   '감사',
   font:   "'NoonnuBasicGothic', sans-serif",
   color:  '#ffffff',
   align:  'center',
@@ -685,45 +685,42 @@ function luminance(hex) {
 
 /* ── 텍스트 그리기 (가로 압축 방식) ── */
 function drawText(c, size) {
-  const pad  = size * 0.05;
+  const pad  = size * 0.06;
   const maxW = size - pad * 2;
   const maxH = size - pad * 2;
 
   // \n 기준으로만 줄 분리 (자동 줄바꿈 없음)
-  const lines = (S.text || ' ').split('\n');
+  const lines = (S.text || ' ').split('\n').map(l => l || ' ');
   const nLines = lines.length;
 
-  // 폰트 크기: 줄당 높이의 88% → 실제 측정 후 넘치면 줄임
-  let fs = Math.floor((maxH / nLines) * 0.88);
-
-  // 실제 글자 높이를 측정해서 캔버스 범위를 벗어나지 않게 조정
-  function measure(fontSize) {
+  // 실제 렌더되는 줄들의 최대 ascent/descent 측정
+  function measureLines(fontSize) {
     c.font = `bold ${fontSize}px ${S.font}`;
-    const m = c.measureText('가나다ABC');
-    return {
-      ascent:  m.actualBoundingBoxAscent  ?? fontSize * 0.78,
-      descent: m.actualBoundingBoxDescent ?? fontSize * 0.18,
-    };
+    let maxA = 0, maxD = 0;
+    for (const line of lines) {
+      const m = c.measureText(line);
+      maxA = Math.max(maxA, m.actualBoundingBoxAscent  || fontSize * 0.75);
+      maxD = Math.max(maxD, m.actualBoundingBoxDescent || fontSize * 0.15);
+    }
+    return { ascent: maxA, descent: maxD };
   }
 
-  let { ascent, descent } = measure(fs);
-  const lineStride = ascent + descent;
-  const totalH = lineStride * nLines;
-
-  // 실제 높이가 maxH를 초과하면 비례 축소
-  if (totalH > maxH) {
-    fs = Math.floor(fs * maxH / totalH);
-    ({ ascent, descent } = measure(fs));
+  // 초기 폰트 크기 추정 후 실제 높이가 maxH에 맞을 때까지 축소
+  let fs = Math.floor(maxH / nLines);
+  for (let i = 0; i < 6; i++) {
+    const { ascent, descent } = measureLines(fs);
+    const totalH = (ascent + descent) * nLines;
+    if (totalH <= maxH) break;
+    fs = Math.floor(fs * (maxH / totalH) * 0.97); // 0.97: 여유 마진
   }
 
+  const { ascent, descent } = measureLines(fs);
   c.font = `bold ${fs}px ${S.font}`;
-  const stride = ascent + descent;
 
-  // 실제 ascent/descent 기준으로 블록을 정확히 수직 중앙 정렬
+  const stride = ascent + descent;
   const blockH = stride * nLines;
   const startY = (size - blockH) / 2 + ascent;
 
-  // 정렬에 따른 기준 X 좌표
   const alignX = S.align === 'left'  ? pad
                : S.align === 'right' ? size - pad
                :                       size / 2;
@@ -734,7 +731,7 @@ function drawText(c, size) {
   const lum = luminance(S.color);
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] === '' ? ' ' : lines[i];
+    const line = lines[i];
     const textW = c.measureText(line).width;
     const y = startY + i * stride;
 
