@@ -685,7 +685,7 @@ function luminance(hex) {
 
 /* ── 텍스트 그리기 (가로 압축 방식) ── */
 function drawText(c, size) {
-  const pad  = size * 0.06;
+  const pad  = size * 0.02;
   const maxW = size - pad * 2;
   const maxH = size - pad * 2;
 
@@ -711,7 +711,7 @@ function drawText(c, size) {
     const { ascent, descent } = measureLines(fs);
     const totalH = (ascent + descent) * nLines;
     if (totalH <= maxH) break;
-    fs = Math.floor(fs * (maxH / totalH) * 0.97); // 0.97: 여유 마진
+    fs = Math.floor(fs * (maxH / totalH)); // 여유 마진 없이 꽉 채움
   }
 
   const { ascent, descent } = measureLines(fs);
@@ -737,13 +737,11 @@ function drawText(c, size) {
 
     c.save();
 
-    // 너비 초과 시 정렬 기준점 중심으로 가로 압축
-    if (textW > maxW) {
-      const xScale = maxW / textW;
-      c.translate(alignX, 0);
-      c.scale(xScale, 1);
-      c.translate(-alignX, 0);
-    }
+    // 항상 너비에 맞게 스케일 (압축 + stretch 모두)
+    const xScale = maxW / textW;
+    c.translate(alignX, 0);
+    c.scale(xScale, 1);
+    c.translate(-alignX, 0);
 
     // 명도 > 0.7(흰색에 가까울 때)만 검정 stroke
     if (lum > 0.7) {
