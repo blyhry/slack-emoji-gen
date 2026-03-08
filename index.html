@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>슬랙 이모지 만들기</title>
+
+  <!-- 폰트 -->
+  <style>
+    @font-face { font-family:'NoonnuBasicGothic'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noon-2410@1.0/NoonnuBasicGothicRegular.woff2') format('woff2'); font-weight:normal; font-display:swap; }
+    @font-face { font-family:'SeoulAlrim'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2505-1@1.0/SeoulAlrimTTF-Bold.woff2') format('woff2'); font-weight:bold; font-display:swap; }
+    @font-face { font-family:'SeoulAlrim'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2505-1@1.0/SeoulAlrimTTF-Medium.woff2') format('woff2'); font-weight:normal; font-display:swap; }
+    @font-face { font-family:'GriunPol'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-6@1.0/Griun_PolHumanrights-Rg.woff2') format('woff2'); font-weight:normal; font-display:swap; }
+    @font-face { font-family:'Eommakkaturi'; src:url('https://gcore.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/Katuri.woff') format('woff'); font-weight:normal; font-display:swap; }
+
+    /* 프리뷰 CSS 모션 */
+    @keyframes a-zoom-in  { 0%,100%{transform:scale(.5)} 50%{transform:scale(1)} }
+    @keyframes a-zoom-out { 0%,100%{transform:scale(1.3)} 50%{transform:scale(.7)} }
+    @keyframes a-bounce   { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-32px)} 60%{transform:translateY(-28px)} }
+    @keyframes a-shake    { 0%,100%{transform:translateX(0) rotate(0deg)} 20%{transform:translateX(-14px) rotate(-8deg)} 50%{transform:translateX(14px) rotate(8deg)} 75%{transform:translateX(-8px) rotate(-5deg)} }
+
+    .m-zoom-in  { animation: a-zoom-in  .85s ease-in-out infinite; }
+    .m-zoom-out { animation: a-zoom-out .85s ease-in-out infinite; }
+    .m-bounce   { animation: a-bounce   .70s cubic-bezier(.36,.07,.19,.97) infinite; }
+    .m-shake    { animation: a-shake    .60s ease-in-out infinite; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+    :root {
+      --ink:    #111111;
+      --ink-md: #555555;
+      --ink-lt: #999999;
+      --border: #d4d4d4;
+      --bg:     #ffffff;
+      --bg-off: #f7f7f7;
+    }
+
+    body {
+      font-family: 'NoonnuBasicGothic', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 56px 16px 0;
+    }
+
+    /* ── 헤더 ── */
+    header { text-align:center; margin-bottom:40px; }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--ink);
+      letter-spacing: -1.5px;
+    }
+
+    header p { margin-top:8px; font-size:.86rem; color:var(--ink-lt); }
+
+    /* ── 모드 탭 ── */
+    .mode-tabs {
+      display: flex;
+      border: 1.5px solid var(--ink);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 28px;
+      width: 200px;
+    }
+
+    .mode-tab {
+      flex: 1;
+      padding: 9px 0;
+      text-align: center;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--bg);
+      color: var(--ink-md);
+      transition: background .15s, color .15s;
+      font-family: 'NoonnuBasicGothic', sans-serif;
+      border: none;
+      user-select: none;
+    }
+    .mode-tab + .mode-tab { border-left: 1.5px solid var(--ink); }
+    .mode-tab.active { background: var(--ink); color: #fff; }
+
+    /* ── 레이아웃 ── */
+    .layout {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      max-width: 740px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+    }
+
+    .controls { flex:1; min-width:285px; }
+
+    .preview-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      min-width: 215px;
+    }
+
+    /* ── 섹션 헤더 ── */
+    .section-hd {
+      font-size: .66rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2.2px;
+      color: var(--ink-lt);
+      margin-bottom: 22px;
+    }
+
+    /* ── 필드 ── */
+    .field { margin-bottom: 22px; }
+
+    .field-label {
+      font-size: .77rem;
+      font-weight: 700;
+      color: var(--ink-md);
+      margin-bottom: 8px;
+    }
+
+    /* 섹션 구분선 */
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 4px 0 22px;
+    }
+
+    /* 정렬 버튼 그룹 */
+    .align-btns {
+      display: flex;
+      gap: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .abtn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      font-size: .88rem;
+      cursor: pointer;
+      background: var(--bg);
+      color: var(--ink-md);
+      border: none;
+      border-right: 1.5px solid var(--border);
+      transition: background .15s, color .15s;
+      user-select: none;
+      font-family: 'NoonnuBasicGothic', sans-serif;
+    }
+    .abtn:last-child { border-right: none; }
+    .abtn:hover { background: var(--bg-off); color: var(--ink); }
+    .abtn.active { background: var(--ink); color: #fff; }
+
+    textarea, select, .hex {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--ink);
+      font-family: 'NoonnuBasicGothic', sans-serif;
+      font-size: .9rem;
+      padding: 10px 13px;
+      outline: none;
+      transition: border-color .18s;
+    }
+    textarea { resize:vertical; min-height:70px; line-height:1.5; }
+    textarea:focus, select:focus, .hex:focus { border-color: var(--ink); }
+
+    select {
+      appearance: none;
+      cursor: pointer;
+      padding-right: 34px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23111' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+    }
+
+    /* ── 컬러 스워치 ── */
+    .swatches { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+
+    .swatch {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,.16);
+      transition: transform .15s;
+    }
+    .swatch:hover { transform: scale(1.18); }
+    .swatch.active { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(0,0,0,.15); }
+
+    .color-row { display:flex; gap:9px; align-items:center; }
+
+    input[type="color"] {
+      width:36px; height:36px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      cursor: pointer;
+      background: var(--bg);
+    }
+
+    .hex {
+      width: 96px;
+      font-family: monospace;
+      font-size: .82rem;
+    }
+
+    /* ── 이미지 업로드 ── */
+    .drop-zone {
+      position: relative;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .18s, background .18s;
+    }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--ink); background: var(--bg-off); }
+
+    .drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+    .drop-icon { font-size:2rem; margin-bottom:8px; }
+    .drop-main { font-size:.85rem; font-weight:700; color:var(--ink); margin-bottom:4px; }
+    .drop-sub  { font-size:.72rem; color:var(--ink-lt); }
+
+    .img-preview-wrap {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .img-thumb {
+      width: 52px; height: 52px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1.5px solid var(--border);
+    }
+
+    .img-info { font-size:.78rem; color:var(--ink-md); line-height:1.5; }
+    .img-remove {
+      margin-left: auto;
+      font-size:.75rem;
+      font-weight:700;
+      color:var(--ink-lt);
+      cursor:pointer;
+      padding:4px 8px;
+      border:1.5px solid var(--border);
+      border-radius:6px;
+      background:var(--bg);
+      font-family:'NoonnuBasicGothic', sans-serif;
+    }
+    .img-remove:hover { border-color:var(--ink); color:var(--ink); }
+
+    /* ── 모션 버튼 ── */
+    .motion-btns { display:flex; flex-wrap:wrap; gap:7px; }
+
+    .mbtn {
+      padding: 7px 14px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      color: var(--ink-md);
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      user-select: none;
+      font-family: 'NoonnuBasicGothic', sans-serif;
+    }
+    .mbtn:hover { border-color:var(--ink); color:var(--ink); }
+    .mbtn.active { background:var(--ink); border-color:var(--ink); color:#fff; }
+
+    /* ── 프리뷰 체커보드 ── */
+    .preview-label {
+      font-size: .66rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--ink-lt);
+    }
+
+    .checker {
+      position: relative;
+      width: 240px; height: 240px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+    }
+
+    .checker-bg {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+      background-color: #fff;
+    }
+
+    #anim {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1;
+    }
+
+    #preview { display:block; width:180px; height:180px; }
+
+    /* ── 다운로드 버튼 ── */
+    .btn-dl {
+      width: 100%;
+      padding: 12px;
+      background: var(--ink);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'NoonnuBasicGothic', sans-serif;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .3px;
+    }
+    .btn-dl:hover { opacity:.82; }
+    .btn-dl:active { transform:scale(.97); }
+    .btn-dl:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+
+    .note { font-size:.66rem; color:var(--ink-lt); text-align:center; line-height:1.6; font-weight:600; }
+
+    /* ── 광고 영역 ── */
+    .ad-zone {
+      width: 100%;
+      max-width: 740px;
+      margin-top: 52px;
+    }
+
+    .ad-label {
+      font-size: .62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--ink-lt);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* 아이샵케어 광고 배너 */
+    .ad-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      background: linear-gradient(120deg, #1a4fb5 0%, #3182f6 60%, #4d9fff 100%);
+      border-radius: 12px;
+      padding: 20px 28px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: opacity .18s;
+      overflow: hidden;
+      position: relative;
+    }
+    .ad-banner:hover { opacity: .88; }
+
+    /* 배경 장식 원 */
+    .ad-banner::before {
+      content: '';
+      position: absolute;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.04);
+      right: -40px; top: -60px;
+      pointer-events: none;
+    }
+    .ad-banner::after {
+      content: '';
+      position: absolute;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.04);
+      right: 60px; bottom: -50px;
+      pointer-events: none;
+    }
+
+    .ad-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .ad-icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .ad-copy { display:flex; flex-direction:column; gap:3px; }
+
+    .ad-brand {
+      font-size: .68rem;
+      font-weight: 700;
+      color: rgba(255,255,255,.45);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .ad-headline {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.3px;
+      line-height: 1.3;
+    }
+
+    .ad-sub {
+      font-size: .75rem;
+      color: rgba(255,255,255,.55);
+      margin-top: 1px;
+    }
+
+    .ad-cta {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      background: #fff;
+      border-radius: 8px;
+      color: #3182f6;
+      font-size: .82rem;
+      font-weight: 800;
+      white-space: nowrap;
+      letter-spacing: -.2px;
+    }
+
+    /* ── 푸터 ── */
+    footer {
+      width: 100%;
+      margin-top: 52px;
+      border-top: 1px solid #ebebeb;
+    }
+
+    .footer-inner {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 28px 16px 36px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-made { font-size:.82rem; font-weight:700; color:var(--ink); }
+    .footer-copy { font-size:.7rem; color:var(--ink-lt); line-height:1.9; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>슬랙 이모지 만들기</h1>
+  <p>나만의 슬랙 이모지를 뚝딱 만들어보세요</p>
+</header>
+
+<!-- 모드 탭 -->
+<div class="mode-tabs" id="modeTabs">
+  <div class="mode-tab active" data-mode="text">텍스트</div>
+  <div class="mode-tab" data-mode="image">이미지</div>
+</div>
+
+<div class="layout">
+
+  <!-- 컨트롤 패널 -->
+  <div class="card controls">
+    <div class="section-hd">설정</div>
+
+    <!-- 텍스트 모드 컨트롤 -->
+    <div id="textControls">
+      <div class="field">
+        <div class="field-label">텍스트</div>
+        <textarea id="text" placeholder="이모지에 넣을 텍스트&#10;줄바꿈 지원">승인</textarea>
+      </div>
+
+      <div class="field">
+        <div class="field-label">폰트</div>
+        <select id="font">
+          <option value="'NoonnuBasicGothic', sans-serif">눈누 기초고딕</option>
+          <option value="'SeoulAlrim', sans-serif">서울알림체</option>
+          <option value="'GriunPol', sans-serif">그리운 경찰인권체</option>
+          <option value="'Eommakkaturi', sans-serif">엄마까투리체</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">정렬</div>
+        <div class="align-btns" id="alignBtns">
+          <div class="abtn active" data-a="left">&#8592; 왼쪽</div>
+          <div class="abtn" data-a="center">가운데</div>
+          <div class="abtn" data-a="right">오른쪽 &#8594;</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">폰트 컬러</div>
+        <div class="swatches" id="swatches">
+          <div class="swatch active" style="background:#ffffff;outline:1.5px solid #ccc;outline-offset:1px" data-c="#ffffff"></div>
+          <div class="swatch" style="background:#111111" data-c="#111111"></div>
+          <div class="swatch" style="background:#FF1744" data-c="#FF1744"></div>
+          <div class="swatch" style="background:#FF6D00" data-c="#FF6D00"></div>
+          <div class="swatch" style="background:#FFD600" data-c="#FFD600"></div>
+          <div class="swatch" style="background:#00E676" data-c="#00E676"></div>
+          <div class="swatch" style="background:#2979FF" data-c="#2979FF"></div>
+          <div class="swatch" style="background:#7C4DFF" data-c="#7C4DFF"></div>
+          <div class="swatch" style="background:#FF4081" data-c="#FF4081"></div>
+        </div>
+        <div class="color-row">
+          <input type="color" id="colorPick" value="#ffffff"/>
+          <input type="text" class="hex" id="colorHex" value="#ffffff" maxlength="7"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이미지 모드 컨트롤 -->
+    <div id="imageControls" style="display:none">
+      <div class="field">
+        <div class="field-label">이미지 업로드</div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="imgInput" accept="image/*"/>
+          <div class="drop-icon">🖼</div>
+          <div class="drop-main">클릭하거나 드래그하여 업로드</div>
+          <div class="drop-sub">JPG · PNG · GIF · WebP &nbsp;|&nbsp; 최대 20MB</div>
+        </div>
+        <div class="img-preview-wrap" id="imgMeta" style="display:none">
+          <img class="img-thumb" id="imgThumb" src="" alt="preview"/>
+          <div class="img-info" id="imgInfo"></div>
+          <button class="img-remove" id="imgRemove">삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 구분선 -->
+    <hr class="section-divider"/>
+
+    <!-- 모션 (공통) -->
+    <div class="field">
+      <div class="field-label">모션 효과</div>
+      <div class="motion-btns" id="motionBtns">
+        <div class="mbtn active" data-m="none">없음</div>
+        <div class="mbtn" data-m="zoom-in">🔍 zoom-in</div>
+        <div class="mbtn" data-m="zoom-out">🔭 zoom-out</div>
+        <div class="mbtn" data-m="bounce">⬆ bounce</div>
+        <div class="mbtn" data-m="shake">↔ shake</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 프리뷰 패널 -->
+  <div class="card preview-col">
+    <div class="preview-label">미리보기</div>
+
+    <div class="checker">
+      <div class="checker-bg"></div>
+      <div id="anim">
+        <canvas id="preview" width="384" height="384"></canvas>
+      </div>
+    </div>
+
+    <button class="btn-dl" id="dlBtn">다운로드</button>
+    <div class="note" id="note">PNG · 128×128 · 투명 배경</div>
+  </div>
+
+</div>
+
+<!-- 광고 영역 -->
+<div class="ad-zone">
+  <div class="ad-label">Advertisement</div>
+  <a class="ad-banner" href="https://www.ishopcare.co.kr/Contact" target="_blank" rel="noopener">
+    <div class="ad-left">
+      <div class="ad-icon">🖥️</div>
+      <div class="ad-copy">
+        <div class="ad-brand">아이샵케어 · i-shopcare</div>
+        <div class="ad-headline">매장 결제, 이제 제대로 케어받으세요</div>
+        <div class="ad-sub">토스 프론트 · 키오스크 · POS · 로봇 바텐더 — 소상공인 맞춤 솔루션</div>
+      </div>
+    </div>
+    <div class="ad-cta">무료 상담 받기 →</div>
+  </a>
+</div>
+
+<!-- 푸터 -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-made">Made with ♥ by 이영현</div>
+    <div class="footer-copy">
+      본 웹사이트의 모든 이미지는 사용자들이 자유롭게 업로드한 것으로, 저작권은 원 소유자에게 있습니다.<br/>
+      이미지에 대한 어떤 소유권이나 저작권을 갖지 않으며, 관련하여 어떤 책임도 지지 않습니다.
+    </div>
+  </div>
+</footer>
+
+<script>
+const canvas  = document.getElementById('preview');
+const ctx     = canvas.getContext('2d');
+const animDiv = document.getElementById('anim');
+
+const RENDER = 384;
+const EXPORT = 128;
+const CHROMA     = 0xFF00FF;   // GIF 투명 크로마키 색상 (숫자)
+const CHROMA_HEX = '#FF00FF';  // 동일 색상 (문자열)
+
+const S = {
+  mode:   'text',
+  text:   '승인',
+  font:   "'NoonnuBasicGothic', sans-serif",
+  color:  '#ffffff',
+  align:  'left',
+  motion: 'none',
+  img:    null,
+};
+
+/* ── 명도 계산 (0~1, 1이 흰색) ── */
+function luminance(hex) {
+  const r = parseInt(hex.slice(1,3), 16) / 255;
+  const g = parseInt(hex.slice(3,5), 16) / 255;
+  const b = parseInt(hex.slice(5,7), 16) / 255;
+  return 0.299*r + 0.587*g + 0.114*b;
+}
+
+/* ── 텍스트 그리기 (가로 압축 방식) ── */
+function drawText(c, size) {
+  const pad  = size * 0.045;
+  const maxW = size - pad * 2;
+  const maxH = size - pad * 2;
+
+  // \n 기준으로만 줄 분리 (자동 줄바꿈 없음)
+  const lines = (S.text || ' ').split('\n');
+
+  const nLines = lines.length;
+  const lineH  = maxH / nLines;
+
+  // 줄 높이에 맞게 폰트 크기 최대화
+  const fs = Math.floor(lineH * 0.88);
+  c.font = `bold ${fs}px ${S.font}`;
+
+  // 첫 번째 줄의 baseline Y (수직 중앙 정렬)
+  const blockH = lineH * nLines;
+  const startY = (size - blockH) / 2 + lineH * 0.82;
+
+  // 정렬에 따른 기준 X 좌표
+  const alignX = S.align === 'left'  ? pad
+               : S.align === 'right' ? size - pad
+               :                       size / 2;
+
+  c.textAlign    = S.align;
+  c.textBaseline = 'alphabetic';
+
+  const lum = luminance(S.color);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] === '' ? ' ' : lines[i];
+    const textW = c.measureText(line).width;
+    const y = startY + i * lineH;
+
+    c.save();
+
+    // 너비 초과 시 정렬 기준점 중심으로 가로 압축
+    if (textW > maxW) {
+      const xScale = maxW / textW;
+      c.translate(alignX, 0);
+      c.scale(xScale, 1);
+      c.translate(-alignX, 0);
+    }
+
+    // 명도 > 0.7(흰색에 가까울 때)만 검정 stroke
+    if (lum > 0.7) {
+      c.strokeStyle = 'rgba(0,0,0,.4)';
+      c.lineWidth   = size * 0.022;
+      c.lineJoin    = 'round';
+      c.strokeText(line, alignX, y);
+    }
+
+    c.fillStyle = S.color;
+    c.fillText(line, alignX, y);
+    c.restore();
+  }
+}
+
+/* ── 이미지 그리기 (cover fit) ── */
+function drawImage(c, size) {
+  if (!S.img) return;
+  const img = S.img;
+  const scale = Math.max(size / img.width, size / img.height);
+  const w = img.width  * scale;
+  const h = img.height * scale;
+  c.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+}
+
+/* ── 캔버스 그리기 (모드 분기) ── */
+function drawContent(c, size) {
+  if (S.mode === 'text') drawText(c, size);
+  else                   drawImage(c, size);
+}
+
+/* ── 렌더 ── */
+async function render() {
+  if (S.mode === 'text') {
+    try { await document.fonts.load(`bold 40px ${S.font}`); } catch(e) {}
+  }
+  ctx.clearRect(0, 0, RENDER, RENDER);
+  drawContent(ctx, RENDER);
+}
+
+/* ── 모드 탭 ── */
+document.getElementById('modeTabs').addEventListener('click', e => {
+  const tab = e.target.closest('.mode-tab');
+  if (!tab) return;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  S.mode = tab.dataset.mode;
+  document.getElementById('textControls').style.display  = S.mode === 'text'  ? '' : 'none';
+  document.getElementById('imageControls').style.display = S.mode === 'image' ? '' : 'none';
+  render();
+});
+
+/* ── 텍스트 이벤트 ── */
+document.getElementById('text').addEventListener('input', e => { S.text = e.target.value; render(); });
+document.getElementById('font').addEventListener('change', e => { S.font = e.target.value; render(); });
+
+/* ── 정렬 버튼 ── */
+document.getElementById('alignBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.abtn');
+  if (!btn) return;
+  document.querySelectorAll('.abtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.align = btn.dataset.a;
+  render();
+});
+
+/* ── 컬러 동기화 ── */
+function syncColor(hex) {
+  S.color = hex;
+  document.getElementById('colorPick').value = hex;
+  document.getElementById('colorHex').value  = hex;
+  document.querySelectorAll('#swatches .swatch').forEach(el =>
+    el.classList.toggle('active', el.dataset.c.toLowerCase() === hex.toLowerCase())
+  );
+  render();
+}
+document.getElementById('colorPick').addEventListener('input', e => syncColor(e.target.value));
+document.getElementById('colorHex').addEventListener('input', e => {
+  if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) syncColor(e.target.value);
+});
+document.getElementById('swatches').addEventListener('click', e => {
+  const sw = e.target.closest('.swatch'); if (sw) syncColor(sw.dataset.c);
+});
+
+/* ── 이미지 업로드 ── */
+const dropZone = document.getElementById('dropZone');
+const imgInput = document.getElementById('imgInput');
+
+function loadImageFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  if (file.size > 20 * 1024 * 1024) { alert('파일 크기는 20MB 이하여야 합니다.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      S.img = img;
+      // 썸네일 + 파일 정보
+      document.getElementById('imgThumb').src = ev.target.result;
+      document.getElementById('imgInfo').textContent =
+        `${file.name}\n${img.width}×${img.height} · ${(file.size/1024/1024).toFixed(1)}MB`;
+      document.getElementById('imgMeta').style.display = 'flex';
+      render();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+imgInput.addEventListener('change', e => loadImageFile(e.target.files[0]));
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  loadImageFile(e.dataTransfer.files[0]);
+});
+
+document.getElementById('imgRemove').addEventListener('click', () => {
+  S.img = null;
+  imgInput.value = '';
+  document.getElementById('imgMeta').style.display = 'none';
+  render();
+});
+
+/* ── 모션 ── */
+const M_CLASS = { 'zoom-in':'m-zoom-in', 'zoom-out':'m-zoom-out', bounce:'m-bounce', shake:'m-shake' };
+
+document.getElementById('motionBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.mbtn');
+  if (!btn) return;
+  document.querySelectorAll('.mbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.motion = btn.dataset.m;
+  animDiv.className = M_CLASS[S.motion] || '';
+  document.getElementById('note').textContent = S.motion === 'none'
+    ? 'PNG · 128×128 · 투명 배경'
+    : 'GIF · 128×128 · 투명 배경 · 모션 적용';
+});
+
+/* ── GIF 프레임 트랜스폼 ── */
+function frameTransform(motion, t) {
+  switch (motion) {
+    case 'zoom-in':  return { s: 0.75 - 0.25 * Math.cos(2*Math.PI*t), tx:0, ty:0 };
+    case 'zoom-out': return { s: 0.75 + 0.25 * Math.cos(2*Math.PI*t), tx:0, ty:0 };
+    case 'bounce':   return { s:1, tx:0, ty: -30 * Math.abs(Math.sin(Math.PI*t)) };
+    case 'shake':    return { s:1, tx: 12 * Math.sin(3*Math.PI*t), ty:0 };
+    default:         return { s:1, tx:0, ty:0 };
+  }
+}
+
+function makeFrame(motion, t) {
+  const fc = document.createElement('canvas');
+  fc.width = fc.height = EXPORT;
+  const c = fc.getContext('2d');
+  // 크로마키 색으로 채우기 → gif.js가 이 색을 투명으로 처리
+  c.fillStyle = CHROMA_HEX;
+  c.fillRect(0, 0, EXPORT, EXPORT);
+  const { s, tx, ty } = frameTransform(motion, t);
+  c.save();
+  c.translate(EXPORT/2 + tx, EXPORT/2 + ty);
+  c.scale(s, s);
+  c.translate(-EXPORT/2, -EXPORT/2);
+  drawContent(c, EXPORT);
+  c.restore();
+  return fc;
+}
+
+/* ── 다운로드 ── */
+document.getElementById('dlBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('dlBtn');
+  if (S.mode === 'text') {
+    try { await document.fonts.load(`bold 40px ${S.font}`); } catch(e) {}
+  }
+
+  const slug = S.mode === 'text'
+    ? (S.text.trim().replace(/\s+/g,'_') || 'emoji').slice(0, 20)
+    : 'image_emoji';
+
+  if (S.motion === 'none') {
+    const off = document.createElement('canvas');
+    off.width = off.height = EXPORT;
+    drawContent(off.getContext('2d'), EXPORT);
+    const a = document.createElement('a');
+    a.download = `emoji_${slug}.png`;
+    a.href = off.toDataURL('image/png');
+    a.click();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 생성 중...';
+
+  try {
+    const workerBlob = await fetch(
+      'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+    ).then(r => r.blob());
+    const workerUrl = URL.createObjectURL(workerBlob);
+    const FRAMES = 24, DELAY = 42;
+
+    const gif = new GIF({
+      workers:1, quality:8, workerScript:workerUrl,
+      width:EXPORT, height:EXPORT,
+      background: CHROMA_HEX,
+      transparent: CHROMA,  // 크로마키 색을 GIF 투명 인덱스로 지정
+      repeat:0,
+    });
+
+    for (let i = 0; i < FRAMES; i++) {
+      gif.addFrame(makeFrame(S.motion, i / FRAMES), { delay:DELAY, copy:true });
+    }
+
+    gif.on('finished', blob => {
+      URL.revokeObjectURL(workerUrl);
+      const a = document.createElement('a');
+      a.download = `emoji_${slug}.gif`;
+      a.href = URL.createObjectURL(blob);
+      a.click();
+      btn.disabled = false;
+      btn.textContent = '다운로드';
+    });
+
+    gif.render();
+  } catch(err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = '다운로드';
+    alert('GIF 생성 중 오류가 발생했습니다.\n인터넷 연결을 확인해주세요.');
+  }
+});
+
+render();
+</script>
+</body>
+</html>
