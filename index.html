@@ -512,8 +512,8 @@
       <div class="field">
         <div class="field-label">정렬</div>
         <div class="align-btns" id="alignBtns">
-          <div class="abtn active" data-a="left">&#8592; 왼쪽</div>
-          <div class="abtn" data-a="center">가운데</div>
+          <div class="abtn" data-a="left">&#8592; 왼쪽</div>
+          <div class="abtn active" data-a="center">가운데</div>
           <div class="abtn" data-a="right">오른쪽 &#8594;</div>
         </div>
       </div>
@@ -631,7 +631,7 @@ const S = {
   text:   '승인',
   font:   "'NoonnuBasicGothic', sans-serif",
   color:  '#ffffff',
-  align:  'left',
+  align:  'center',
   motion: 'none',
   img:    null,
 };
@@ -656,13 +656,14 @@ function drawText(c, size) {
   const nLines = lines.length;
   const lineH  = maxH / nLines;
 
-  // 줄 높이에 맞게 폰트 크기 최대화
-  const fs = Math.floor(lineH * 0.88);
+  // 폰트 크기: 줄 높이의 92%로 꽉 채우기
+  const fs = Math.floor(lineH * 0.92);
   c.font = `bold ${fs}px ${S.font}`;
 
-  // 첫 번째 줄의 baseline Y (수직 중앙 정렬)
-  const blockH = lineH * nLines;
-  const startY = (size - blockH) / 2 + lineH * 0.82;
+  // 한글 기준 정확한 수직 중앙 정렬
+  // 시각적 블록 높이 = 첫 줄 높이(fs) + 나머지 줄 baseline 간격
+  // descender 없는 한글은 cap height ≈ fontSize
+  const startY = (size - fs - (nLines - 1) * lineH) / 2 + fs;
 
   // 정렬에 따른 기준 X 좌표
   const alignX = S.align === 'left'  ? pad
